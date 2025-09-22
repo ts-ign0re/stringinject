@@ -99,11 +99,11 @@ jobs:
 
             ### 📦 Installation:
             ```bash
-            npm install stringinject
+            npm install @tronin/stringinject
             ```
 
             ### 🔗 Links:
-            - [npm package](https://www.npmjs.com/package/stringinject)
+            - [npm package](https://www.npmjs.com/package/@tronin/stringinject)
             - [Documentation](https://github.com/tjcafferkey/stringinject#readme)
           draft: false
           prerelease: false
