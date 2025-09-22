@@ -13,7 +13,9 @@
     "prepublishOnly": "npm run build",
     "pretest": "npm run build && npm run build:test",
     "test": "mocha dist-test/**/*.spec.js",
-    "test:watch": "npm run build && npm run build:test && mocha --watch dist-test/**/*.spec.js"
+    "test:watch": "npm run build && npm run build:test && mocha --watch dist-test/**/*.spec.js",
+    "test:integration": "npm run build && node integration-tests/run-all.js",
+    "test:all": "npm test && npm run test:integration"
   },
   "repository": {
     "type": "git",

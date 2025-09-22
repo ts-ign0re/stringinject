@@ -1,0 +1,6 @@
+{
+  "name": "stringinject-npm-simulation",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Simulates how the package would be used after npm install"
+}
