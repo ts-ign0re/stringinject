@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       version_type:
-        description: 'Version bump type'
+        description: "Version bump type"
         required: true
-        default: 'patch'
+        default: "patch"
         type: choice
         options:
-        - patch
-        - minor
-        - major
+          - patch
+          - minor
+          - major
       dry_run:
-        description: 'Run in dry-run mode (do not actually publish)'
+        description: "Run in dry-run mode (do not actually publish)"
         required: false
         default: false
         type: boolean
@@ -24,180 +24,180 @@ jobs:
     environment: Production
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Configure Git
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        registry-url: 'https://registry.npmjs.org'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: latest
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
 
-    - name: Get pnpm store directory
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-    - name: Setup pnpm cache
-      uses: actions/cache@v3
-      with:
-        path: ${{ env.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Run type checking
-      run: npm run type-check
+      - name: Run type checking
+        run: npm run type-check
 
-    - name: Run all tests (unit + integration)
-      run: npm run test:all
+      - name: Run all tests (unit + integration)
+        run: npm run test:all
 
-    - name: Security audit
-      run: pnpm audit --audit-level moderate
+      - name: Security audit
+        run: pnpm audit --audit-level moderate
 
-    - name: Verify package structure
-      run: |
-        echo "📦 Verifying package structure..."
+      - name: Verify package structure
+        run: |
+          echo "📦 Verifying package structure..."
 
-        # Check required files exist
-        files_to_check=("dist/index.js" "dist/index.d.ts" "package.json" "README.md")
-        for file in "${files_to_check[@]}"; do
-          if [ ! -f "$file" ]; then
-            echo "❌ Required file missing: $file"
-            exit 1
-          fi
-        done
+          # Check required files exist
+          files_to_check=("dist/index.js" "dist/index.d.ts" "package.json" "README.md")
+          for file in "${files_to_check[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Required file missing: $file"
+              exit 1
+            fi
+          done
 
-        # Validate package.json structure
-        node -e "
-          const pkg = require('./package.json');
-          const required = ['name', 'version', 'main', 'types', 'exports'];
-          for (const field of required) {
-            if (!pkg[field]) {
-              console.error(\`❌ package.json missing required field: \${field}\`);
-              process.exit(1);
-            }
-          }
-          console.log('✅ Package structure verified');
-          console.log(\`📋 Current version: \${pkg.version}\`);
-        "
-
-    - name: Bump version
-      if: ${{ !inputs.dry_run }}
-      run: |
-        echo "🔄 Bumping version (${{ inputs.version_type }})"
-        npm version ${{ inputs.version_type }} --no-git-tag-version
-        NEW_VERSION=$(node -p "require('./package.json').version")
-        echo "NEW_VERSION=v$NEW_VERSION" >> $GITHUB_ENV
-        echo "📈 New version: $NEW_VERSION"
-
-    - name: Show version (dry run)
-      if: ${{ inputs.dry_run }}
-      run: |
-        echo "🔍 DRY RUN: Would bump version (${{ inputs.version_type }})"
-        CURRENT_VERSION=$(node -p "require('./package.json').version")
-        echo "Current version: $CURRENT_VERSION"
-
-    - name: Build final package
-      run: npm run build
-
-    - name: Final package verification
-      run: |
-        echo "🔍 Final package verification..."
-
-        # Test package can be imported
-        node -e "
-          async function test() {
-            try {
-              const { default: stringInject } = await import('./dist/index.js');
-              const result = stringInject('Test {0}', ['passed']);
-              if (result !== 'Test passed') {
-                throw new Error('Package test failed');
+          # Validate package.json structure
+          node -e "
+            const pkg = require('./package.json');
+            const required = ['name', 'version', 'main', 'types', 'exports'];
+            for (const field of required) {
+              if (!pkg[field]) {
+                console.error(\`❌ package.json missing required field: \${field}\`);
+                process.exit(1);
               }
-              console.log('✅ Package functionality verified');
-            } catch (error) {
-              console.error('❌ Package verification failed:', error);
-              process.exit(1);
             }
-          }
-          test();
-        "
+            console.log('✅ Package structure verified');
+            console.log(\`📋 Current version: \${pkg.version}\`);
+          "
 
-    - name: Commit version bump
-      if: ${{ !inputs.dry_run }}
-      run: |
-        git add package.json
-        git commit -m "chore: bump version to ${{ env.NEW_VERSION }}"
-        git tag ${{ env.NEW_VERSION }}
+      - name: Bump version
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "🔄 Bumping version (${{ inputs.version_type }})"
+          npm version ${{ inputs.version_type }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "NEW_VERSION=v$NEW_VERSION" >> $GITHUB_ENV
+          echo "📈 New version: $NEW_VERSION"
 
-    - name: Push changes
-      if: ${{ !inputs.dry_run }}
-      run: |
-        git push origin master
-        git push origin ${{ env.NEW_VERSION }}
+      - name: Show version (dry run)
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "🔍 DRY RUN: Would bump version (${{ inputs.version_type }})"
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
 
-    - name: Publish to npm
-      if: ${{ !inputs.dry_run }}
-      run: |
-        echo "🚀 Publishing to npm..."
-        npm publish
-        echo "✅ Package published successfully!"
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Build final package
+        run: npm run build
 
-    - name: Dry run summary
-      if: ${{ inputs.dry_run }}
-      run: |
-        echo "🔍 DRY RUN COMPLETED"
-        echo "✅ All tests passed"
-        echo "✅ Package structure verified"
-        echo "✅ Security audit passed"
-        echo "✅ Package functionality verified"
-        echo "🚀 Ready for publishing!"
+      - name: Final package verification
+        run: |
+          echo "🔍 Final package verification..."
 
-    - name: Create GitHub Release
-      if: ${{ !inputs.dry_run }}
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ env.NEW_VERSION }}
-        release_name: Release ${{ env.NEW_VERSION }}
-        body: |
-          ## 🚀 Release ${{ env.NEW_VERSION }}
+          # Test package can be imported
+          node -e "
+            async function test() {
+              try {
+                const { default: stringInject } = await import('./dist/index.js');
+                const result = stringInject('Test {0}', ['passed']);
+                if (result !== 'Test passed') {
+                  throw new Error('Package test failed');
+                }
+                console.log('✅ Package functionality verified');
+              } catch (error) {
+                console.error('❌ Package verification failed:', error);
+                process.exit(1);
+              }
+            }
+            test();
+          "
 
-          ### ✅ What's included:
-          - Full TypeScript support with type definitions
-          - ES Module and CommonJS compatibility
-          - Comprehensive test coverage (unit + integration)
-          - Security audit passed
+      - name: Commit version bump
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git add package.json
+          git commit -m "chore: bump version to ${{ env.NEW_VERSION }}"
+          git tag ${{ env.NEW_VERSION }}
 
-          ### 📦 Installation:
-          ```bash
-          npm install stringinject
-          ```
+      - name: Push changes
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git push origin master
+          git push origin ${{ env.NEW_VERSION }}
 
-          ### 🔗 Links:
-          - [npm package](https://www.npmjs.com/package/stringinject)
-          - [Documentation](https://github.com/tjcafferkey/stringinject#readme)
+      - name: Publish to npm
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "🚀 Publishing to npm..."
+          npm publish
+          echo "✅ Package published successfully!"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-          ---
-          *This release was automatically created after all tests passed ✅*
-        draft: false
-        prerelease: false
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "🔍 DRY RUN COMPLETED"
+          echo "✅ All tests passed"
+          echo "✅ Package structure verified"
+          echo "✅ Security audit passed"
+          echo "✅ Package functionality verified"
+          echo "🚀 Ready for publishing!"
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.NEW_VERSION }}
+          release_name: Release ${{ env.NEW_VERSION }}
+          body: |
+            ## 🚀 Release ${{ env.NEW_VERSION }}
+
+            ### ✅ What's included:
+            - Full TypeScript support with type definitions
+            - ES Module and CommonJS compatibility
+            - Comprehensive test coverage (unit + integration)
+            - Security audit passed
+
+            ### 📦 Installation:
+            ```bash
+            npm install @tronin/stringinject
+            ```
+
+            ### 🔗 Links:
+            - [npm package](https://www.npmjs.com/package/@tronin/stringinject)
+            - [Documentation](https://github.com/tjcafferkey/stringinject#readme)
+
+            ---
+            *This release was automatically created after all tests passed ✅*
+          draft: false
+          prerelease: false
