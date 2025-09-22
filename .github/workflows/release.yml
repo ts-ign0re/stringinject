@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: Production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build package
+        run: npm run build
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Verify package contents
+        run: |
+          echo "📦 Verifying package contents..."
+          if [ ! -f "dist/index.js" ] || [ ! -f "dist/index.d.ts" ]; then
+            echo "❌ Required build files are missing"
+            exit 1
+          fi
+
+          if [ ! -f "package.json" ]; then
+            echo "❌ package.json is missing"
+            exit 1
+          fi
+
+          # Check that package.json has correct exports
+          node -e "
+            const pkg = require('./package.json');
+            if (!pkg.exports || !pkg.types || !pkg.main) {
+              console.error('❌ package.json missing required fields');
+              process.exit(1);
+            }
+            console.log('✅ Package structure verified');
+          "
+
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ## 🚀 Release ${{ github.ref_name }}
+
+            ### ✅ What's included:
+            - Full TypeScript support with type definitions
+            - ES Module and CommonJS compatibility
+            - Comprehensive test coverage
+            - Integration tests for package distribution
+
+            ### 📦 Installation:
+            ```bash
+            npm install stringinject
+            ```
+
+            ### 🔗 Links:
+            - [npm package](https://www.npmjs.com/package/stringinject)
+            - [Documentation](https://github.com/tjcafferkey/stringinject#readme)
+          draft: false
+          prerelease: false

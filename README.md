@@ -1,4 +1,9 @@
 # stringinject
+
+[![CI](https://github.com/tjcafferkey/stringinject/workflows/CI/badge.svg)](https://github.com/tjcafferkey/stringinject/actions)
+[![npm version](https://badge.fury.io/js/stringinject.svg)](https://badge.fury.io/js/stringinject)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+
 Inject an array, or an object of items in to a string replacing selected values.
 
 ## Install ##
@@ -22,6 +27,10 @@ var string = stringInject("This is a {0} string for {1}", ["test", "stringInject
 
 // This is a test string for stringInject
 ```
+
+Note
+- Package is ESM-only and includes TypeScript types.
+- In CommonJS, use dynamic import: `const { default: stringInject } = await import('stringinject')`.
 
 ### Objects ###
 

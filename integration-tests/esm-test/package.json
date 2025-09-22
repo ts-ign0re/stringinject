@@ -1,0 +1,6 @@
+{
+  "name": "stringinject-esm-test",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "ES Module compatibility test for stringinject"
+}

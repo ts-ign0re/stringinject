@@ -1,0 +1,9 @@
+{
+  "name": "stringinject-types-test",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "TypeScript definitions test for stringinject",
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

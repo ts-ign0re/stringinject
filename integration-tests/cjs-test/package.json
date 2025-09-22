@@ -1,0 +1,6 @@
+{
+  "name": "stringinject-cjs-test",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "description": "CommonJS compatibility test for stringinject"
+}
